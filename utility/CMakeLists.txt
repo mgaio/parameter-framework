@@ -26,9 +26,22 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+if (WIN32)
+    set(UTILITY_OS_SPECIFIC_FILES
+    windows/DynamicLoadedLibrary.cpp)
+else ()
+    set(UTILITY_OS_SPECIFIC_FILES
+    posix/DynamicLoadedLibrary.cpp)
+endif ()
+
+include_directories(
+    "${PROJECT_SOURCE_DIR}/utility")
+
 add_library(pfw_utility STATIC
+    ${UTILITY_OS_SPECIFIC_FILES}
     Tokenizer.cpp
     Utility.cpp
+    DynamicLoadedLibrary.cpp
     FullIo.cpp)
 
 if (NOT WIN32)
@@ -39,5 +52,6 @@ endif ()
 install(FILES
     NonCopyable.hpp
     Utility.h
+    DynamicLoadedLibrary.hpp
     convert.hpp
     DESTINATION "include/utility")
