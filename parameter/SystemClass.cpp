@@ -37,6 +37,7 @@
 #include "LoggingElementBuilderTemplate.h"
 #include <assert.h>
 #include "PluginLocation.h"
+#include "DynamicLoadedLibrary.hpp"
 #include "Utility.h"
 #include "Memory.hpp"
 
@@ -80,11 +81,11 @@ CSystemClass::~CSystemClass()
     clean();
 
     // Close all previously opened subsystem libraries
-    list<void*>::const_iterator it;
+    list<DynamicLoadedLibrary *>::const_iterator it;
 
     for (it = _subsystemLibraryHandleList.begin(); it != _subsystemLibraryHandleList.end(); ++it) {
 
-        dlclose(*it);
+        delete *it;
     }
 }
 
@@ -218,17 +219,13 @@ bool CSystemClass::loadPlugins(list<string>& lstrPluginFiles, core::Results& err
         string strPluginFileName = *it;
 
         // Load attempt
-        void* lib_handle = dlopen(strPluginFileName.c_str(), RTLD_LAZY);
+        DynamicLoadedLibrary *library;
+        try {
+            library = new DynamicLoadedLibrary(strPluginFileName);
 
-        if (!lib_handle) {
+        } catch (std::exception& e) {
+            errors.push_back(e.what());
 
-            const char *err = dlerror();
-            // Failed
-            if (err == NULL) {
-                errors.push_back("dlerror failed");
-            } else {
-                errors.push_back("Plugin load failed: " + string(err));
-            }
             // Next plugin
             ++it;
 
@@ -236,13 +233,14 @@ bool CSystemClass::loadPlugins(list<string>& lstrPluginFiles, core::Results& err
         }
 
         // Store libraries handles
-        _subsystemLibraryHandleList.push_back(lib_handle);
+        _subsystemLibraryHandleList.push_back(library);
 
         // Get plugin symbol
         string strPluginSymbol = getPluginSymbol(strPluginFileName);
 
         // Load symbol from library
-        GetSubsystemBuilder pfnGetSubsystemBuilder = (GetSubsystemBuilder)dlsym(lib_handle, strPluginSymbol.c_str());
+        GetSubsystemBuilder pfnGetSubsystemBuilder =
+                    reinterpret_cast<GetSubsystemBuilder>(library->getSymbol(strPluginSymbol.c_str()));
 
         if (!pfnGetSubsystemBuilder) {
 

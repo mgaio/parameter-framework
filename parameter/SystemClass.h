@@ -37,6 +37,7 @@
 #include <string>
 
 class CSubsystemLibrary;
+class DynamicLoadedLibrary;
 
 class CSystemClass : public CConfigurableElement
 {
@@ -115,7 +116,7 @@ private:
 
     // Subsystem factory
     CSubsystemLibrary* _pSubsystemLibrary;
-    std::list<void*> _subsystemLibraryHandleList; /**< Contains the list of all open plugin libs. */
+    std::list<DynamicLoadedLibrary *> _subsystemLibraryHandleList; /**< Contains the list of all open plugin libs. */
 
     /** Application Logger we need to provide to plugins */
     core::log::Logger& _logger;
